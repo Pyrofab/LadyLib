@@ -26,6 +26,9 @@ import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A class offering several utility methods to create, use and configure shaders
+ */
 @SideOnly(Side.CLIENT)
 public class ShaderUtil {
 
@@ -55,8 +58,8 @@ public class ShaderUtil {
      * The corresponding program will be created and linked during the next ResourceManager reloading
      *
      * @param identifier a unique resource location that will be used to load this shader
-     * @param vertex the file name of the vertex shader, extension included
-     * @param fragment the file name of the fragment shader, extension included
+     * @param vertex     the file name of the vertex shader, extension included
+     * @param fragment   the file name of the fragment shader, extension included
      */
     public static void registerShader(ResourceLocation identifier, String vertex, String fragment) {
         registeredShaders.put(identifier, Pair.of(vertex, fragment));
@@ -64,6 +67,7 @@ public class ShaderUtil {
 
     /**
      * Loads and links all registered shaders
+     *
      * @param resourceManager Minecraft's resource manager
      */
     public static void loadShaders(IResourceManager resourceManager) {
@@ -220,6 +224,9 @@ public class ShaderUtil {
         return projectionInverse;
     }
 
+    /**
+     * This one is actually broken for some reason
+     */
     public static FloatBuffer getModelViewMatrix() {
         ByteBuffer modelView = ByteBuffer.allocateDirect(16 * Float.BYTES);
         modelView.order(ByteOrder.nativeOrder());

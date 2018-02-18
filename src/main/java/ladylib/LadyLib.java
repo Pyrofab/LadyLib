@@ -10,6 +10,8 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,14 +32,24 @@ public class LadyLib {
      * Call this during {@link net.minecraftforge.fml.common.event.FMLPreInitializationEvent}
      */
     public static void preInit(FMLPreInitializationEvent event) {
+        // automatically gets the calling mod container
         shadingMod = Loader.instance().activeModContainer();
         if (shadingMod == null)
             throw new IllegalStateException("LadyLib initialization was done at the wrong time");
         shadingModId = shadingMod.getModId();
-        LOGGER = LogManager.getLogger(shadingMod.getName());
-        ((IReloadableResourceManager)Minecraft.getMinecraft().getResourceManager()).registerReloadListener(ShaderUtil::loadShaders);
+        LOGGER = LogManager.getLogger(shadingMod.getName() + ":lib");
         registrar = new AutoRegistrar(event.getAsmData());
         MinecraftForge.EVENT_BUS.register(registrar);
+        MinecraftForge.EVENT_BUS.register(registrar.getItemRegistrar());
+        MinecraftForge.EVENT_BUS.register(registrar.getBlockRegistrar());
+    }
+
+    /**
+     * Call this in your client proxy PreInitialization method
+     */
+    @SideOnly(Side.CLIENT)
+    public static void clientInit() {
+        ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(ShaderUtil::loadShaders);
     }
 
     public static void makeCreativeTab(Supplier<ItemStack> icon) {

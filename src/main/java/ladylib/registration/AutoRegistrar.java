@@ -1,6 +1,7 @@
 package ladylib.registration;
 
 import ladylib.LadyLib;
+import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
@@ -13,14 +14,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Class handling most of the registration work automatically
+ */
 public class AutoRegistrar {
 
+    private ItemRegistrar itemRegistrar;
+    private BlockRegistrar blockRegistrar;
+
     private List<AutoRegistryRef> references = new ArrayList<>();
-    private List<Item> invisibleItems = new ArrayList<>();
 
     public AutoRegistrar(ASMDataTable asmData) {
-        Set<ASMDataTable.ASMData> allObjectHolders = asmData.getAll(AutoRegister.class.getName());
-        for (ASMDataTable.ASMData data : allObjectHolders) {
+        this.itemRegistrar = new ItemRegistrar();
+        this.blockRegistrar = new BlockRegistrar(itemRegistrar);
+        // find all classes that will be handled by this registrar
+        Set<ASMDataTable.ASMData> allRegistryHandlers = asmData.getAll(AutoRegister.class.getName());
+        for (ASMDataTable.ASMData data : allRegistryHandlers) {
             // each mod using this library is shading it so we must only affect the shading mod
             boolean isShadingModProperty = data.getAnnotationInfo().get("value").equals(LadyLib.getModId());
             if (isShadingModProperty) {
@@ -52,19 +61,22 @@ public class AutoRegistrar {
                 .filter(ref -> ref.isValidForRegistry(event.getRegistry()))
                 .forEach(ref -> {
                     T value = ref.nameAndGet();
-                    event.getRegistry().register(value);
+                    // items and blocks have additional registration behaviours
                     if (value instanceof Item) {
-                        Item item = (Item) value;
-                        if (ref.isInvisible())
-                            invisibleItems.add(item);
-                        else
-                            item.setCreativeTab(LadyLib.getCreativeTab());
+                        itemRegistrar.addItem((Item) value, ref.isListed());
+                    } else if (value instanceof Block) {
+                        blockRegistrar.addBlock((Block) value, ref.isListed(), ref.isMakeItemBlock());
+                    } else {
+                        event.getRegistry().register(value);
                     }
                 });
     }
 
-    public List<Item> getInvisibleItems() {
-        return invisibleItems;
+    public BlockRegistrar getBlockRegistrar() {
+        return blockRegistrar;
     }
 
+    public ItemRegistrar getItemRegistrar() {
+        return itemRegistrar;
+    }
 }

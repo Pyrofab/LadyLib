@@ -20,6 +20,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -34,7 +36,7 @@ public class ParticleManager {
 
     public static final ParticleManager INSTANCE = new ParticleManager();
 
-    private final Set<Particle> particles = new HashSet<>();
+    private final List<Particle> particles = new LinkedList<>();
     private final Set<ResourceLocation> particleTextures = new HashSet<>();
 
     public static void registerParticleTexture(ResourceLocation location) {
@@ -58,7 +60,7 @@ public class ParticleManager {
 
     public void updateParticles() {
         // particles cost a lot less to update than to render
-        particles.stream().limit(3*Configuration.client.maxParticles).forEach(Particle::onUpdate);
+        particles.stream().limit(3 * Configuration.client.maxParticles).forEach(Particle::onUpdate);
         particles.removeIf(p -> !p.isAlive());
     }
 
@@ -110,8 +112,9 @@ public class ParticleManager {
     }
 
     public void addParticle(Particle p) {
-//        if (particles.size() < Configuration.client.maxParticles)
-        particles.add(p);
+        // If we can't even tick them, don't add them
+        if (particles.size() < Configuration.client.maxParticles * 3)
+            particles.add(p);
     }
 
 }

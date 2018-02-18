@@ -15,7 +15,7 @@ public class JEICompat implements IModPlugin {
     }
 
     private void blacklistInvisibleItems(IIngredientBlacklist blacklist) {
-        for (Item blacklisted : LadyLib.getRegistrar().getInvisibleItems()) {
+        for (Item blacklisted : LadyLib.getRegistrar().getItemRegistrar().getInvisibleItems()) {
             blacklist.addIngredientToBlacklist(blacklisted);
         }
     }

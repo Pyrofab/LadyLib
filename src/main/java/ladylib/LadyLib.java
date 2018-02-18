@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class LadyLib {
 
@@ -39,12 +40,12 @@ public class LadyLib {
         MinecraftForge.EVENT_BUS.register(registrar);
     }
 
-    public static void makeCreativeTab(ItemStack icon) {
+    public static void makeCreativeTab(Supplier<ItemStack> icon) {
         creativeTab = new CreativeTabs(shadingMod.getName()) {
             @Nonnull
             @Override
             public ItemStack getTabIconItem() {
-                return icon;
+                return icon.get();
             }
         };
     }

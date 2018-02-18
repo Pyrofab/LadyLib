@@ -18,15 +18,16 @@ class AutoRegistryRef {
     private MethodHandle setUnlocalizedName;
     private boolean invisible;
 
-    public AutoRegistryRef(Field field) {
+    AutoRegistryRef(Field field) {
         this.field = field;
         try {
             Method m;
+            // Items and blocks have different obfuscated names for their setUnlocalizedName method
             if (Item.class.isAssignableFrom(field.getDeclaringClass()))
                 m = ReflectionHelper.findMethod(field.getDeclaringClass(), "setUnlocalizedName", "func_77655_b", String.class);
             else if (Block.class.isAssignableFrom(field.getDeclaringClass()))
                 m = ReflectionHelper.findMethod(field.getDeclaringClass(), "setUnlocalizedName", "func_149663_c", String.class);
-            else
+            else    // If it has a setUnlocalizedName method, it is not from vanilla so not obfuscated
                 m = field.getDeclaringClass().getMethod("setUnlocalizedName", String.class);
             if (m != null)
                 setUnlocalizedName = MethodHandles.lookup().unreflect(m);
@@ -36,12 +37,12 @@ class AutoRegistryRef {
         }
     }
 
-    public boolean isValidForRegistry(IForgeRegistry<?> registry) {
+    boolean isValidForRegistry(IForgeRegistry<?> registry) {
         return registry.getRegistrySuperType().isAssignableFrom(field.getDeclaringClass());
     }
 
     @SuppressWarnings("unchecked")
-    public <V extends IForgeRegistryEntry> V nameAndGet() {
+    <V extends IForgeRegistryEntry> V nameAndGet() {
         try {
             String name = field.getName();
             IForgeRegistryEntry value = ((IForgeRegistryEntry)field.get(null));
@@ -55,7 +56,7 @@ class AutoRegistryRef {
         return null;
     }
 
-    public boolean isInvisible() {
+    boolean isInvisible() {
         return invisible;
     }
 }

@@ -39,7 +39,7 @@ public class AutoRegistrar {
             // use the same criteria as ObjectHolderRegistry to detect candidates
             boolean isMatch = Modifier.isPublic(mods) && Modifier.isStatic(mods) && Modifier.isFinal(mods);
             // No point in trying to automatically register non registrable fields
-            if (isMatch && IForgeRegistryEntry.class.isAssignableFrom(f.getDeclaringClass()) && !f.isAnnotationPresent(AutoRegister.Ignore.class)) {
+            if (isMatch && IForgeRegistryEntry.class.isAssignableFrom(f.getType()) && !f.isAnnotationPresent(AutoRegister.Ignore.class)) {
                 references.add(new AutoRegistryRef(f));
             }
         }

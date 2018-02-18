@@ -23,11 +23,6 @@ public @interface AutoRegister {
     String value();
 
     /**
-     * The type of registry entry to automatically register
-     */
-    Class<? extends IForgeRegistryEntry> type();
-
-    /**
      * If put on a field inside a class annotated with AutoRegister, that field will be excluded from automatic registration
      */
     @Target(ElementType.FIELD)

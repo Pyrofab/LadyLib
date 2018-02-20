@@ -19,6 +19,14 @@ archivesBaseName = modBaseName
 
 sourceCompatibility = 1.8
 
+sourceSets {
+    main {
+        jar {
+            exclude 'testmod/**'
+        }
+    }
+}
+
 minecraft {
     version = project.forgeVersion
     runDir = "run"

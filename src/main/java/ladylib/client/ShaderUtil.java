@@ -201,7 +201,7 @@ public class ShaderUtil {
         for (int i = 0; i < textures.length; i++) {
             ResourceLocation texture = textures[i];
             // don't mess with the lightmap (1) nor the default texture (0)
-            GlStateManager.setActiveTexture(i + 2);
+            GlStateManager.setActiveTexture(i + OpenglHelper.defaultTexUnit + 2);
             Minecraft.getMinecraft().renderEngine.bindTexture(texture);
             // start texture uniforms at 1, as 0 would be the default texture which doesn't require any special operation
             setUniform("texture" + (i + 1), i + 2);

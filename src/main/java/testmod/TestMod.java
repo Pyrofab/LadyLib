@@ -13,7 +13,7 @@ public class TestMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LadyLib lib = LadyLib.newLibInstance(event);
-        LadyLib.clientInit();
+        lib.clientInit(() -> Configuration.client.maxParticles);
         lib.makeCreativeTab(() -> new ItemStack(ModItems.TEST));
     }
 

@@ -6,7 +6,6 @@ import net.minecraft.item.Item;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
 import java.lang.reflect.Field;
@@ -31,7 +30,7 @@ public class AutoRegistrar {
         // find all classes that will be handled by this registrar
         Set<ASMDataTable.ASMData> allRegistryHandlers = asmData.getAll(AutoRegister.class.getName());
         for (ASMDataTable.ASMData data : allRegistryHandlers) {
-            // each mod using this library is shading it so we must only affect the shading mod
+            // each mod using this library has its own instance so we must only affect the owning mod
             String modId = (String) data.getAnnotationInfo().get("value");
             if (modId.equals(ladyLib.getModId())) {
                 try {
@@ -56,6 +55,7 @@ public class AutoRegistrar {
     }
 
     @SubscribeEvent
+    @SuppressWarnings("unchecked")
     public void onRegistryRegister(RegistryEvent.Register event) {
         references.stream()
                 // Only register for the right event, incidentally filters out entries with no corresponding registry

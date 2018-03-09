@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,41 +33,13 @@ import java.util.Map;
 @SideOnly(Side.CLIENT)
 public class ShaderUtil {
 
-
     private static int prevProgram = 0, currentProgram = 0;
-    private static final String SHADER_LOCATION_PREFIX = "shaders/";
+    static final String SHADER_LOCATION_PREFIX = "shaders/";
 
-    private static final Map<ResourceLocation, Pair<ResourceLocation, ResourceLocation>> registeredShaders = new HashMap<>();
     private static final Object2IntMap<ResourceLocation> linkedShaders = new Object2IntOpenHashMap<>();
 
     private static boolean shouldNotUseShaders() {
         return !OpenGlHelper.shadersSupported;
-    }
-
-    /**
-     * Convenience method to register a shader with the fragment and vertex shaders having the same name <br/>
-     * The corresponding program will be created and linked during the next ResourceManager reloading
-     *
-     * @param identifier the unique identifier for this shader. The resource domain is also used to get the file
-     * @param shaderName the common name or relative location of both shaders, minus the file extension
-     */
-    public static void registerShader(ResourceLocation identifier, String shaderName) {
-        registeredShaders.put(identifier, Pair.of(
-                new ResourceLocation(identifier.getResourceDomain(), SHADER_LOCATION_PREFIX + shaderName + ".vsh"),
-                new ResourceLocation(identifier.getResourceDomain(), SHADER_LOCATION_PREFIX + shaderName + ".fsh")
-        ));
-    }
-
-    /**
-     * Registers a shader with two shaders having the same name
-     * The corresponding program will be created and linked during the next ResourceManager reloading
-     *
-     * @param identifier a unique resource location that will be used to load this shader
-     * @param vertex     the file name of the vertex shader, extension included
-     * @param fragment   the file name of the fragment shader, extension included
-     */
-    public static void registerShader(ResourceLocation identifier, ResourceLocation vertex, ResourceLocation fragment) {
-        registeredShaders.put(identifier, Pair.of(vertex, fragment));
     }
 
     /**
@@ -77,6 +50,8 @@ public class ShaderUtil {
     public static void loadShaders(IResourceManager resourceManager) {
         if (shouldNotUseShaders())
             return;
+        Map<ResourceLocation, Pair<ResourceLocation, ResourceLocation>> registeredShaders = new HashMap<>();
+        MinecraftForge.EVENT_BUS.post(new ShaderRegistryEvent(registeredShaders));
         registeredShaders.forEach((rl, sh) -> linkedShaders.put(rl, loadShader(resourceManager, sh.getLeft(), sh.getRight())));
     }
 

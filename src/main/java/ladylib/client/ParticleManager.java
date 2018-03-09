@@ -12,7 +12,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.event.TextureStitchEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -23,6 +22,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * This class has been adapted from embers' source code under GNU Lesser General Public License 2.1
@@ -31,40 +31,42 @@ import java.util.Set;
  * @author Elucent
  */
 @SideOnly(Side.CLIENT)
-@Mod.EventBusSubscriber(Side.CLIENT)
 public class ParticleManager {
-
-    public static final ParticleManager INSTANCE = new ParticleManager();
 
     private final List<Particle> particles = new LinkedList<>();
     private final Set<ResourceLocation> particleTextures = new HashSet<>();
+    private final Supplier<Integer> maxParticles;
 
-    public static void registerParticleTexture(ResourceLocation location) {
-        INSTANCE.particleTextures.add(location);
+    public ParticleManager(Supplier<Integer> maxParticles) {
+        this.maxParticles = maxParticles;
+    }
+
+    public void registerParticleTexture(ResourceLocation location) {
+        particleTextures.add(location);
     }
 
     @SubscribeEvent
-    public static void onTextureStitch(TextureStitchEvent.Pre event) {
-        INSTANCE.particleTextures.forEach(event.getMap()::registerSprite);
+    public void onTextureStitch(TextureStitchEvent.Pre event) {
+        particleTextures.forEach(event.getMap()::registerSprite);
     }
 
     @SubscribeEvent
-    public static void onGameTick(TickEvent.ClientTickEvent event) {
-        INSTANCE.updateParticles();
+    public void onGameTick(TickEvent.ClientTickEvent event) {
+        updateParticles();
     }
 
     @SubscribeEvent
-    public static void onRenderWorldLast(RenderWorldLastEvent event) {
-        INSTANCE.renderParticles(event.getPartialTicks());
+    public void onRenderWorldLast(RenderWorldLastEvent event) {
+        renderParticles(event.getPartialTicks());
     }
 
-    public void updateParticles() {
+    private void updateParticles() {
         // particles cost a lot less to update than to render
-        particles.stream().limit(3 * Configuration.client.maxParticles).forEach(Particle::onUpdate);
+        particles.stream().limit(3 * maxParticles.get()).forEach(Particle::onUpdate);
         particles.removeIf(p -> !p.isAlive());
     }
 
-    public void renderParticles(float partialTicks) {
+    private void renderParticles(float partialTicks) {
         float f = ActiveRenderInfo.getRotationX();
         float f1 = ActiveRenderInfo.getRotationZ();
         float f2 = ActiveRenderInfo.getRotationYZ();
@@ -95,7 +97,7 @@ public class ParticleManager {
                 GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
                 buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.PARTICLE_POSITION_TEX_COLOR_LMAP);
                 particles.stream()
-                        .limit(Configuration.client.maxParticles)
+                        .limit(maxParticles.get())
                         .forEach(p -> p.renderParticle(buffer, player, partialTicks, f, f4, f1, f2, f3));
                 tess.draw();
             }
@@ -113,7 +115,7 @@ public class ParticleManager {
 
     public void addParticle(Particle p) {
         // If we can't even tick them, don't add them
-        if (particles.size() < Configuration.client.maxParticles * 3)
+        if (particles.size() < maxParticles.get() * 3)
             particles.add(p);
     }
 

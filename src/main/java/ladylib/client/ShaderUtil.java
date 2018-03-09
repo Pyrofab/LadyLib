@@ -238,7 +238,7 @@ public class ShaderUtil {
     private static String fromFile(IResourceManager resourceManager, ResourceLocation fileLocation) {
         StringBuilder source = new StringBuilder();
 
-        try (InputStream in = resourceManager.getResource(fileLocation).getInputStream();/* ShaderUtil.class.getResourceAsStream(JAR_LOCATION_PREFIX + filename*/
+        try (InputStream in = resourceManager.getResource(fileLocation).getInputStream();
              BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
             String line;
             while ((line = reader.readLine()) != null)

@@ -6,12 +6,16 @@ import ladylib.LadyLib;
 import ladylib.client.ICustomLocation;
 import ladylib.misc.TemplateUtil;
 import net.minecraft.block.Block;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiErrorScreen;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fluids.BlockFluidBase;
+import net.minecraftforge.fml.client.CustomModLoadingErrorDisplayException;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -80,8 +84,46 @@ public class ItemRegistrar {
     @SideOnly(Side.CLIENT)
     public static void registerRender(Item item, ModelResourceLocation loc) {
         ModelLoader.setCustomModelResourceLocation(item, 0, loc);
-        if (LadyLib.isDevEnv())
-            TemplateUtil.generateItemModel();
+    }
+
+    /**
+     * Call that anytime between item registration and model registration
+     *
+     * @param srcRoot the location of the <tt>resources</tt> directory in which the files will be generated
+     */
+    public void generateStubModels(String srcRoot) {
+        TemplateUtil.srcRoot = srcRoot;
+        List<String> createdModelFiles = allItems.keySet().stream()
+                .filter(itemIn -> !(itemIn instanceof ItemBlock) && !(itemIn instanceof ICustomLocation))
+                .map(Item::getRegistryName)
+                .map(TemplateUtil::generateItemModel)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (!createdModelFiles.isEmpty())
+            throw new ModelStubsCreatedPleaseRestartTheGameException(createdModelFiles); // Because stupid forge prevents System.exit()
+    }
+
+    public static class ModelStubsCreatedPleaseRestartTheGameException extends CustomModLoadingErrorDisplayException {
+        private final List<String> createdModelFiles;
+
+        public ModelStubsCreatedPleaseRestartTheGameException(List<String> createdModelFiles) {
+            this.createdModelFiles = createdModelFiles;
+        }
+
+        @Override
+        public void initGui(GuiErrorScreen errorScreen, FontRenderer fontRenderer) {
+        }
+
+        @Override
+        public void drawScreen(GuiErrorScreen errorScreen, FontRenderer fontRenderer, int mouseRelX, int mouseRelY, float tickTime) {
+            fontRenderer.drawString("The following model stub files have been generated:", 30, 10, 0xFFFFFFFF);
+            int i = 0;
+            for (; i < createdModelFiles.size(); i++) {
+                String s = createdModelFiles.get(i);
+                fontRenderer.drawString(s, 5, 30 * (i+1), 0xFFFFFFFF);
+            }
+            fontRenderer.drawString("The game should now be restarted", 30, 30*(i+1), 0xFFFFFFFF);
+        }
     }
 
     public List<Item> getInvisibleItems() {

@@ -10,4 +10,5 @@ public class ModItems {
     public static final Item TEST = new Item();
     @AutoRegister.Unlisted
     public static final Item HIDDEN = new Item();
+    public static final Item GENERATED = new Item();
 }

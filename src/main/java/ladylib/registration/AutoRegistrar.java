@@ -6,6 +6,7 @@ import net.minecraft.item.Item;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
 import java.lang.reflect.Field;
@@ -24,17 +25,17 @@ public class AutoRegistrar {
 
     private List<AutoRegistryRef> references = new ArrayList<>();
 
-    public AutoRegistrar(ASMDataTable asmData) {
-        this.itemRegistrar = new ItemRegistrar();
-        this.blockRegistrar = new BlockRegistrar(itemRegistrar);
+    public AutoRegistrar(LadyLib ladyLib, ASMDataTable asmData) {
+        this.itemRegistrar = new ItemRegistrar(ladyLib);
+        this.blockRegistrar = new BlockRegistrar(ladyLib, itemRegistrar);
         // find all classes that will be handled by this registrar
         Set<ASMDataTable.ASMData> allRegistryHandlers = asmData.getAll(AutoRegister.class.getName());
         for (ASMDataTable.ASMData data : allRegistryHandlers) {
             // each mod using this library is shading it so we must only affect the shading mod
-            boolean isShadingModProperty = data.getAnnotationInfo().get("value").equals(LadyLib.getModId());
-            if (isShadingModProperty) {
+            String modId = (String) data.getAnnotationInfo().get("value");
+            if (modId.equals(ladyLib.getModId())) {
                 try {
-                    scanClassForFields(Class.forName(data.getClassName(), false, getClass().getClassLoader()));
+                    scanClassForFields(modId, Class.forName(data.getClassName(), false, getClass().getClassLoader()));
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -42,25 +43,25 @@ public class AutoRegistrar {
         }
     }
 
-    private void scanClassForFields(Class<?> autoRegisterClass) {
+    private void scanClassForFields(String modId, Class<?> autoRegisterClass) {
         for (Field f : autoRegisterClass.getFields()) {
             int mods = f.getModifiers();
             // use the same criteria as ObjectHolderRegistry to detect candidates
             boolean isMatch = Modifier.isPublic(mods) && Modifier.isStatic(mods) && Modifier.isFinal(mods);
             // No point in trying to automatically register non registrable fields
             if (isMatch && IForgeRegistryEntry.class.isAssignableFrom(f.getType()) && !f.isAnnotationPresent(AutoRegister.Ignore.class)) {
-                references.add(new AutoRegistryRef(f));
+                references.add(new AutoRegistryRef(modId, f));
             }
         }
     }
 
     @SubscribeEvent
-    public <T extends IForgeRegistryEntry<T>> void onRegistryRegister(RegistryEvent.Register<T> event) {
+    public void onRegistryRegister(RegistryEvent.Register event) {
         references.stream()
                 // Only register for the right event, incidentally filters out entries with no corresponding registry
                 .filter(ref -> ref.isValidForRegistry(event.getRegistry()))
                 .forEach(ref -> {
-                    T value = ref.nameAndGet();
+                    IForgeRegistryEntry value = ref.nameAndGet();
                     // items and blocks have additional registration behaviours
                     if (value instanceof Item) {
                         itemRegistrar.addItem((Item) value, ref.isListed());

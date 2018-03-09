@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 public class BlockRegistrar {
 
+    private final LadyLib ladyLib;
     private ItemRegistrar itemRegistrar;
     /**
      * A map tracking all registered items and whether they should be invisible in the creative and JEI tabs
@@ -30,7 +31,8 @@ public class BlockRegistrar {
      */
     private Object2BooleanMap<Block> allBlocks = new Object2BooleanOpenHashMap<>();
 
-    public BlockRegistrar(ItemRegistrar itemRegistrar) {
+    public BlockRegistrar(LadyLib ladyLib, ItemRegistrar itemRegistrar) {
+        this.ladyLib = ladyLib;
         this.itemRegistrar = itemRegistrar;
     }
 
@@ -64,7 +66,7 @@ public class BlockRegistrar {
         // adds the block to the list to be registered later
         allBlocks.put(block, listed);
         if (listed)
-            block.setCreativeTab(LadyLib.getCreativeTab());
+            block.setCreativeTab(ladyLib.getCreativeTab());
         // adds the corresponding item to the list of items to be registered as well
         T item = blockItemFunction.apply(block);
         if (item != Items.AIR)

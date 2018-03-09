@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemStack;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
@@ -16,35 +17,56 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 public class LadyLib {
 
     public static Logger LOGGER = LogManager.getLogger("LadyLib");
+    private static final List<LadyLib> allInstances = new ArrayList<>();
 
-    private static ModContainer shadingMod;
-    private static String shadingModId;
-    private static CreativeTabs creativeTab;
-    private static AutoRegistrar registrar;
+    private ModContainer shadingMod;
+    private String shadingModId;
+    private CreativeTabs creativeTab;
+    private AutoRegistrar registrar;
+
+    public static LadyLib newLibInstance(FMLPreInitializationEvent event) {
+        LadyLib ret = new LadyLib();
+        ret.preInit(event);
+        allInstances.add(ret);
+        return ret;
+    }
+
+    public static boolean isDevEnv() {
+        return (Boolean) Launch.blackboard.get("fml.deobfuscatedEnvironment");
+    }
+
+    public static List<LadyLib> getAllInstances() {
+        return allInstances;
+    }
+
+    private LadyLib() {}
 
     /**
      * Call this during {@link net.minecraftforge.fml.common.event.FMLPreInitializationEvent}
      */
-    public static void preInit(FMLPreInitializationEvent event) {
+    public void preInit(FMLPreInitializationEvent event) {
         // automatically gets the calling mod container
         shadingMod = Loader.instance().activeModContainer();
         if (shadingMod == null)
             throw new IllegalStateException("LadyLib initialization was done at the wrong time");
         shadingModId = shadingMod.getModId();
         LOGGER = LogManager.getLogger(shadingMod.getName() + ":lib");
-        registrar = new AutoRegistrar(event.getAsmData());
+        registrar = new AutoRegistrar(this, event.getAsmData());
         MinecraftForge.EVENT_BUS.register(registrar);
         MinecraftForge.EVENT_BUS.register(registrar.getItemRegistrar());
         MinecraftForge.EVENT_BUS.register(registrar.getBlockRegistrar());
     }
 
     /**
+     * Initializes client-only helpers like {@link ShaderUtil} <br/>
      * Call this in your client proxy PreInitialization method
      */
     @SideOnly(Side.CLIENT)
@@ -52,7 +74,7 @@ public class LadyLib {
         ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(ShaderUtil::loadShaders);
     }
 
-    public static void makeCreativeTab(Supplier<ItemStack> icon) {
+    public void makeCreativeTab(Supplier<ItemStack> icon) {
         creativeTab = new CreativeTabs(shadingMod.getName()) {
             @Nonnull
             @Override
@@ -62,15 +84,16 @@ public class LadyLib {
         };
     }
 
-    public static CreativeTabs getCreativeTab() {
+    public CreativeTabs getCreativeTab() {
         return creativeTab;
     }
 
-    public static AutoRegistrar getRegistrar() {
+    public AutoRegistrar getRegistrar() {
         return registrar;
     }
 
-    public static String getModId() {
+    public String getModId() {
         return Objects.requireNonNull(shadingModId, "The enclosing mod's id was not set before calling the library");
     }
+
 }

@@ -36,7 +36,7 @@ public class ShaderUtil {
     private static int prevProgram = 0, currentProgram = 0;
     private static final String SHADER_LOCATION_PREFIX = "shaders/";
 
-    private static final Map<ResourceLocation, Pair<String, String>> registeredShaders = new HashMap<>();
+    private static final Map<ResourceLocation, Pair<ResourceLocation, ResourceLocation>> registeredShaders = new HashMap<>();
     private static final Object2IntMap<ResourceLocation> linkedShaders = new Object2IntOpenHashMap<>();
 
     private static boolean shouldNotUseShaders() {
@@ -44,13 +44,17 @@ public class ShaderUtil {
     }
 
     /**
-     * Registers a shader with two shaders having the same name
+     * Convenience method to register a shader with the fragment and vertex shaders having the same name <br/>
      * The corresponding program will be created and linked during the next ResourceManager reloading
      *
+     * @param identifier the unique identifier for this shader. The resource domain is also used to get the file
      * @param shaderName the common name or relative location of both shaders, minus the file extension
      */
     public static void registerShader(ResourceLocation identifier, String shaderName) {
-        registeredShaders.put(identifier, Pair.of(shaderName + ".vsh", shaderName + ".fsh"));
+        registeredShaders.put(identifier, Pair.of(
+                new ResourceLocation(identifier.getResourceDomain(), SHADER_LOCATION_PREFIX + shaderName + ".vsh"),
+                new ResourceLocation(identifier.getResourceDomain(), SHADER_LOCATION_PREFIX + shaderName + ".fsh")
+        ));
     }
 
     /**
@@ -61,7 +65,7 @@ public class ShaderUtil {
      * @param vertex     the file name of the vertex shader, extension included
      * @param fragment   the file name of the fragment shader, extension included
      */
-    public static void registerShader(ResourceLocation identifier, String vertex, String fragment) {
+    public static void registerShader(ResourceLocation identifier, ResourceLocation vertex, ResourceLocation fragment) {
         registeredShaders.put(identifier, Pair.of(vertex, fragment));
     }
 
@@ -83,13 +87,13 @@ public class ShaderUtil {
      * @param fragmentLocation the name or relative location of the fragment shader
      * @return the reference to the initialized program
      */
-    private static int loadShader(IResourceManager resourceManager, String vertexLocation, String fragmentLocation) {
+    private static int loadShader(IResourceManager resourceManager, ResourceLocation vertexLocation, ResourceLocation fragmentLocation) {
 
         // program creation
         int program = OpenGlHelper.glCreateProgram();
 
         // vertex shader creation
-        if (vertexLocation != null && !vertexLocation.trim().isEmpty()) {
+        if (vertexLocation != null) {
             int vertexShader = OpenGlHelper.glCreateShader(OpenGlHelper.GL_VERTEX_SHADER);
             ARBShaderObjects.glShaderSourceARB(vertexShader, fromFile(resourceManager, vertexLocation));
             OpenGlHelper.glCompileShader(vertexShader);
@@ -97,7 +101,7 @@ public class ShaderUtil {
         }
 
         // fragment shader creation
-        if (fragmentLocation != null && !fragmentLocation.trim().isEmpty()) {
+        if (fragmentLocation != null) {
             int fragmentShader = OpenGlHelper.glCreateShader(OpenGlHelper.GL_FRAGMENT_SHADER);
             ARBShaderObjects.glShaderSourceARB(fragmentShader, fromFile(resourceManager, fragmentLocation));
             OpenGlHelper.glCompileShader(fragmentShader);
@@ -253,13 +257,13 @@ public class ShaderUtil {
     /**
      * Reads a text file into a single String
      *
-     * @param filename the path to the file to read
+     * @param fileLocation the path to the file to read
      * @return a string with the content of the file
      */
-    private static String fromFile(IResourceManager resourceManager, String filename) {
+    private static String fromFile(IResourceManager resourceManager, ResourceLocation fileLocation) {
         StringBuilder source = new StringBuilder();
 
-        try (InputStream in = resourceManager.getResource(new ResourceLocation(LadyLib.getModId(), SHADER_LOCATION_PREFIX + filename)).getInputStream();/* ShaderUtil.class.getResourceAsStream(JAR_LOCATION_PREFIX + filename*/
+        try (InputStream in = resourceManager.getResource(fileLocation).getInputStream();/* ShaderUtil.class.getResourceAsStream(JAR_LOCATION_PREFIX + filename*/
              BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"))) {
             String line;
             while ((line = reader.readLine()) != null)
@@ -267,7 +271,7 @@ public class ShaderUtil {
         } catch (IOException exc) {
             LadyLib.LOGGER.error(exc);
         } catch (NullPointerException e) {
-            LadyLib.LOGGER.error(e + " : " + filename + " does not exist");
+            LadyLib.LOGGER.error(e + " : " + fileLocation + " does not exist");
         }
 
         return source.toString();

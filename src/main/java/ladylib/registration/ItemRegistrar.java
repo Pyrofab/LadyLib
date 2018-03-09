@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import ladylib.LadyLib;
 import ladylib.client.ICustomLocation;
+import ladylib.misc.TemplateUtil;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
@@ -27,11 +28,16 @@ import java.util.stream.Collectors;
  */
 public class ItemRegistrar {
 
+    private final LadyLib ladyLib;
     /**
      * A map tracking all registered items and whether they should be invisible in the creative and JEI tabs
-     * (the value is true if the item is invisible)
+     * (the value is true if the item is unlisted)
      */
     private Object2BooleanMap<Item> allItems = new Object2BooleanOpenHashMap<>();
+
+    public ItemRegistrar(LadyLib ladyLib) {
+        this.ladyLib = ladyLib;
+    }
 
     /**
      * Adds an item to the list
@@ -48,10 +54,10 @@ public class ItemRegistrar {
      */
     @SubscribeEvent(priority = EventPriority.LOW)
     public void registerItems(RegistryEvent.Register<Item> event) {
-        allItems.forEach((item, listed) -> {
+        allItems.forEach((item, unlisted) -> {
             event.getRegistry().register(item);
-            if (listed)
-                item.setCreativeTab(LadyLib.getCreativeTab());
+            if (!unlisted)
+                item.setCreativeTab(ladyLib.getCreativeTab());
         });
     }
 
@@ -74,6 +80,8 @@ public class ItemRegistrar {
     @SideOnly(Side.CLIENT)
     public static void registerRender(Item item, ModelResourceLocation loc) {
         ModelLoader.setCustomModelResourceLocation(item, 0, loc);
+        if (LadyLib.isDevEnv())
+            TemplateUtil.generateItemModel();
     }
 
     public List<Item> getInvisibleItems() {

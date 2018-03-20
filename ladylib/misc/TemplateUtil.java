@@ -2,13 +2,17 @@ package ladylib.misc;
 
 import ladylib.LadyLib;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiErrorScreen;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.client.CustomModLoadingErrorDisplayException;
 
 import javax.annotation.Nullable;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
+import java.util.List;
 import java.util.Scanner;
 
 public class TemplateUtil {
@@ -44,5 +48,28 @@ public class TemplateUtil {
             LadyLib.LOGGER.error("Error while generating stub item model", e);
         }
         return null;
+    }
+
+    public static class ModelStubsCreatedPleaseRestartTheGameException extends CustomModLoadingErrorDisplayException {
+        private final List<String> createdModelFiles;
+
+        public ModelStubsCreatedPleaseRestartTheGameException(List<String> createdModelFiles) {
+            this.createdModelFiles = createdModelFiles;
+        }
+
+        @Override
+        public void initGui(GuiErrorScreen errorScreen, FontRenderer fontRenderer) {
+        }
+
+        @Override
+        public void drawScreen(GuiErrorScreen errorScreen, FontRenderer fontRenderer, int mouseRelX, int mouseRelY, float tickTime) {
+            fontRenderer.drawString("The following model stub files have been generated:", 30, 10, 0xFFFFFFFF);
+            int i = 0;
+            for (; i < createdModelFiles.size(); i++) {
+                String s = createdModelFiles.get(i);
+                fontRenderer.drawString(s, 5, 30 * (i+1), 0xFFFFFFFF);
+            }
+            fontRenderer.drawString("The game should now be restarted", 30, 30*(i+1), 0xFFFFFFFF);
+        }
     }
 }
